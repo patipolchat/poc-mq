@@ -1,0 +1,19 @@
+db:
+  host: "postgres"
+  user: "citizix_user"
+  password: "S3cret"
+  dbname: "citizix_db"
+  port: 5432
+
+kafka:
+  brokers:
+    - "kafka-0:29092"
+    - "kafka-1:29092"
+    - "kafka-2:29092"
+  topic: "topic0"
+  partition: 3
+
+nats:
+  host: "nat-1"
+  port: 4222
+  subject: "subject0"

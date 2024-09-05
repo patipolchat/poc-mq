@@ -1,0 +1,18 @@
+db:
+  host: "localhost"
+  user: "citizix_user"
+  password: "S3cret"
+  dbname: "citizix_db"
+  port: 5432
+
+kafka:
+  brokers:
+    - "localhost:9092"
+    - "localhost:9093"
+    - "localhost:9094"
+  topic: "topic0"
+  partition: 3
+
+nats:
+  url: "nats://localhost:1222, nats://localhost:1223, nats://localhost:1224"
+  subject: "subject0"
