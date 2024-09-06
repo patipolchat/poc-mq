@@ -28,7 +28,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		nc, err := nats.Connect("nats://127.0.0.1:4222")
+		nc, err := nats.Connect("nats://localhost:4222, nats://localhost:4223, nats://localhost:4224")
 		if err != nil {
 			log.Fatalln("Cannot Connect", err)
 		}
@@ -48,14 +48,14 @@ to quickly create a Cobra application.`,
 			log.Fatalln("Cannot create stream", err)
 		}
 
-		randomStr, err := model.GenerateRandomString(128256)
+		randomStr, err := model.GenerateRandomString(1000)
 		if err != nil {
 			log.Fatalf("Failed to generate random string: %v", err)
 		}
 
 		for i := 0; i < 1; i++ {
 			wg := &sync.WaitGroup{}
-			for j := 0; j < 1000; j++ {
+			for j := 0; j < 6; j++ {
 				wg.Add(1)
 				now := time.Now()
 				msg := model.Message{
@@ -63,7 +63,7 @@ to quickly create a Cobra application.`,
 					Start:    &now,
 					End:      nil,
 					Duration: nil,
-					Tag:      "Nat1000-3",
+					Tag:      "Nat1000-x",
 					Data:     randomStr,
 				}
 				b, err := json.Marshal(msg)

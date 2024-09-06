@@ -185,9 +185,7 @@ services:
         limits:
           cpus: "1.0"         # CPU limit: 1 CPU core
           memory: 500M        # Memory limit: 500MB
-          
-          
-          
+
           
   nat-consumer:
     build: .
@@ -200,7 +198,7 @@ services:
       - default
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 3
       resources:
         limits:
           cpus: "1.0"         # CPU limit: 1 CPU core

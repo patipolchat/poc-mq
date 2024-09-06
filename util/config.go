@@ -26,8 +26,8 @@ type KafkaConfig struct {
 }
 
 type NatConfig struct {
-	Url     string
-	Subject string
+	Url     string `mapstructure:"url" validate:"required"`
+	Subject string `mapstructure:"subject" validate:"required"`
 }
 
 func NewConfig() (*Config, error) {

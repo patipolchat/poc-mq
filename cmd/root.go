@@ -42,6 +42,8 @@ func Execute() {
 	}
 }
 
+var cfgName string
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -53,10 +55,11 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+	rootCmd.PersistentFlags().StringVar(&cfgName, "config", "config", "config file")
 }
 
 func GetDB() *gorm.DB {
-	dsn := "host=postgres user=citizix_user password=S3cret dbname=citizix_db port=5432 sslmode=disable TimeZone=Asia/Bangkok"
+	dsn := "host=localhost user=citizix_user password=S3cret dbname=citizix_db port=5432 sslmode=disable TimeZone=Asia/Bangkok"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")

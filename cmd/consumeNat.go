@@ -4,15 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
-	"mq-poc/model"
-	"time"
+	"mq-poc/myNats"
+	"mq-poc/util"
 )
 
 // consumeNatCmd represents the consumeNat command
@@ -26,86 +22,22 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		db := GetDB()
-
-		q := model.NewDBQueue(db)
-		q.Start()
-		nc, err := nats.Connect("nats://nats:4222")
+		viper.AddConfigPath(".")
+		viper.SetConfigName(cfgName)
+		viper.SetConfigType("yaml")
+		err := viper.ReadInConfig()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln("Cannot read config", err)
 		}
-		defer nc.Close()
-		js, err := jetstream.New(nc)
+		cfg, err := util.NewConfig()
 		if err != nil {
-			log.Fatalln("JetStreamErr", err)
+			log.Fatalln("Cannot Get config", err)
 		}
-		ctx := context.Background()
-		stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-			Name:     "foo",
-			Subjects: []string{"foo"},
-		})
+		db, err := util.GetDB(cfg.DB)
 		if err != nil {
-			log.Fatalf("Failed to create stream: %v", err)
+			log.Fatalln("Cannot Get DB", err)
 		}
-
-		consumer, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-			Name:    "foo",
-			Durable: "foo",
-		})
-		if err != nil {
-			log.Fatalf("Failed to create consumer: %v", err)
-		}
-		fmt.Println("Connected to NATS server")
-		cc, err := consumer.Consume(func(msg jetstream.Msg) {
-			defer msg.Ack()
-			end := time.Now()
-			go func(msg jetstream.Msg, end time.Time) {
-				var message model.Message
-				err := json.Unmarshal(msg.Data(), &message)
-				if err != nil {
-					log.Fatalf("Failed to parse message: %v", err)
-				}
-				message.End = &end
-				message.SetDuration()
-				q.AddMsg(&message)
-			}(msg, end)
-		})
-		defer cc.Stop()
-		for {
-			select {
-			case <-cc.Closed():
-				log.Println("Consumer closed")
-				return
-			}
-		}
-		//ch := make(chan *nats.Msg, 64)
-		//sub, err := nc.ChanSubscribe("foo", ch)
-		//if err != nil {
-		//	log.Fatalf("Failed to subscribe to NATS server: %v", err)
-		//}
-		//defer sub.Unsubscribe()
-		//ctx, cancel := context.WithCancel(context.Background())
-		//defer cancel()
-		//for {
-		//	select {
-		//	case msg := <-ch:
-		//		end := time.Now()
-		//		go func(msg *nats.Msg, end time.Time) {
-		//			var message model.Message
-		//			err := json.Unmarshal(msg.Data, &message)
-		//			if err != nil {
-		//				log.Fatalf("Failed to parse message: %v", err)
-		//			}
-		//			message.End = &end
-		//			message.SetDuration()
-		//			q.AddMsg(&message)
-		//		}(msg, end)
-		//	case <-ctx.Done():
-		//		close(ch)
-		//		return
-		//	}
-		//}
-
+		myNats.StartConsume(cfg.Nats, db)
 	},
 }
 

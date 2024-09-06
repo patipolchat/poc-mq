@@ -8,18 +8,19 @@ import (
 	"gorm.io/gorm"
 	"mq-poc/kafka"
 	"mq-poc/model"
+	"mq-poc/myNats"
 	"mq-poc/util"
 	"testing"
 	"time"
 )
 
-type KafkaProduceSuite struct {
+type ProduceSuite struct {
 	suite.Suite
 	cfg *util.Config
 	db  *gorm.DB
 }
 
-func (suite *KafkaProduceSuite) SetupSuite() {
+func (suite *ProduceSuite) SetupSuite() {
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -36,11 +37,11 @@ func (suite *KafkaProduceSuite) SetupSuite() {
 	kafka.CreateTopic(cfg.Kafka)
 }
 
-func (suite *KafkaProduceSuite) TestProduce() {
+func (suite *ProduceSuite) TestProduceKafka() {
 	tag := model.Tag{
 		Name:   "Kafka-" + uuid.NewString(),
-		StrLen: 128256,
-		N:      1000,
+		StrLen: 2048,
+		N:      10000,
 	}
 	kafka.ProduceMsg(suite.cfg.Kafka, suite.db, tag)
 	var count int64
@@ -58,17 +59,40 @@ func (suite *KafkaProduceSuite) TestProduce() {
 	fmt.Printf("Tag %s Avg %d: %s\n", tag.Name, tag.N, avg)
 }
 
-func (suite *KafkaProduceSuite) countMessages(tag model.Tag) (int64, error) {
+func (suite *ProduceSuite) TestProduceNats() {
+	tag := model.Tag{
+		Name:   "Nats-" + uuid.NewString(),
+		StrLen: 2048,
+		N:      10000,
+	}
+	myNats.ProduceMsg(suite.cfg.Nats, tag)
+	var count int64
+	ch := time.Tick(time.Second * 3)
+	for range ch {
+		var err error
+		count, err = suite.countMessages(tag)
+		suite.Require().NoError(err)
+		if count >= int64(tag.N) {
+			break
+		}
+	}
+	avg, err := suite.getAvg(tag)
+	suite.Require().NoError(err)
+	fmt.Printf("Tag %s Avg %d: %s\n", tag.Name, tag.N, avg)
+}
+
+func (suite *ProduceSuite) countMessages(tag model.Tag) (int64, error) {
 	var count int64
 	err := suite.db.Model(&model.Message{}).Where(`tag=?`, tag.Name).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println("Count", count)
 
 	return count, nil
 }
 
-func (suite *KafkaProduceSuite) getAvg(tag model.Tag) (string, error) {
+func (suite *ProduceSuite) getAvg(tag model.Tag) (string, error) {
 	var avg string
 	err := suite.db.Model(&model.Message{}).Where(`tag=?`, tag.Name).Select("AVG(duration)").Row().Scan(&avg)
 	if err != nil {
@@ -78,6 +102,6 @@ func (suite *KafkaProduceSuite) getAvg(tag model.Tag) (string, error) {
 	return avg, nil
 }
 
-func TestKafkaProduceSuite(t *testing.T) {
-	suite.Run(t, new(KafkaProduceSuite))
+func TestProduceSuite(t *testing.T) {
+	suite.Run(t, new(ProduceSuite))
 }

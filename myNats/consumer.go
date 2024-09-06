@@ -1,4 +1,4 @@
-package nats
+package myNats
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 func StartConsume(cfg *util.NatConfig, db *gorm.DB) {
 	q := model.NewDBQueue(db)
 	q.Start()
-	nc, err := nats.Connect("nats://nats:4222")
+	nc, err := nats.Connect(cfg.Url)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func StartConsume(cfg *util.NatConfig, db *gorm.DB) {
 	ctx := context.Background()
 	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:     "foo",
-		Subjects: []string{"foo"},
+		Subjects: []string{cfg.Subject},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create stream: %v", err)
@@ -52,6 +52,7 @@ func StartConsume(cfg *util.NatConfig, db *gorm.DB) {
 				log.Fatalf("Failed to parse message: %v", err)
 			}
 			message.End = &end
+			message.Data = ""
 			message.SetDuration()
 			q.AddMsg(&message)
 		}(msg, end)

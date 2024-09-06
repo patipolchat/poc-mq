@@ -4,15 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
-	"errors"
-	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
-	"mq-poc/model"
-	"os"
-	"os/signal"
-	"syscall"
+	"mq-poc/kafka"
+	"mq-poc/util"
 )
 
 // consumeKafkaCmd represents the consumeKafka command
@@ -26,73 +22,23 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		keepRunning := true
-		config := sarama.NewConfig()
-		config.Version = sarama.V3_6_0_0
-		config.Consumer.Return.Errors = true
-
-		db := GetDB()
-
-		dbq := model.NewDBQueue(db)
-		dbq.Start()
-		defer dbq.Stop()
-		consumer := model.Consumer{
-			Ready: make(chan bool),
-			DbQ:   dbq,
-		}
-
-		// Create new consumer
-		client, err := sarama.NewConsumerGroup(broker, "leg2-customer-group", config)
+		viper.AddConfigPath(".")
+		viper.SetConfigName(cfgName)
+		viper.SetConfigType("yaml")
+		err := viper.ReadInConfig()
 		if err != nil {
-			log.Fatalln("Failed to start Sarama consumer:", err)
+			log.Fatalln("Cannot read config", err)
 		}
-		defer func() {
-			if err := client.Close(); err != nil {
-				log.Fatalln("Failed to close Sarama consumer:", err)
-			}
-		}()
-
-		config.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRoundRobin()}
-		// Define the topic and partition to consume
-		topics := []string{"topic0"}
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			for {
-				// `Consume` should be called inside an infinite loop, when a
-				// server-side rebalance happens, the consumer session will need to be
-				// recreated to get the new claims
-				if err := client.Consume(ctx, topics, &consumer); err != nil {
-					if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-						return
-					}
-					log.Panicf("Error from consumer: %v", err)
-				}
-				// check if context was cancelled, signaling that the consumer should stop
-				if ctx.Err() != nil {
-					return
-				}
-				consumer.Ready = make(chan bool)
-			}
-		}()
-
-		<-consumer.Ready // Await till the consumer has been set up
-		log.Println("Sarama consumer up and running!...")
-
-		sigterm := make(chan os.Signal, 1)
-		signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
-
-		for keepRunning {
-			select {
-			case <-ctx.Done():
-				keepRunning = false
-				log.Println("terminating: context cancelled")
-			case <-sigterm:
-				keepRunning = false
-				log.Println("terminating: via signal")
-			}
+		cfg, err := util.NewConfig()
+		if err != nil {
+			log.Fatalln("Cannot Get config", err)
 		}
-		cancel()
-		log.Println("terminating: bye!")
+		db, err := util.GetDB(cfg.DB)
+		if err != nil {
+			log.Fatalln("Cannot Get DB", err)
+		}
+		kafka.CreateTopic(cfg.Kafka)
+		kafka.StartConsume(cfg.Kafka, db)
 	},
 }
 
