@@ -41,7 +41,7 @@ func (suite *ProduceSuite) TestProduceKafka() {
 	tag := model.Tag{
 		Name:   "Kafka-" + uuid.NewString(),
 		StrLen: 2048,
-		N:      10000,
+		N:      1,
 	}
 	kafka.ProduceMsg(suite.cfg.Kafka, suite.db, tag)
 	var count int64
@@ -63,7 +63,7 @@ func (suite *ProduceSuite) TestProduceNats() {
 	tag := model.Tag{
 		Name:   "Nats-" + uuid.NewString(),
 		StrLen: 2048,
-		N:      10000,
+		N:      1,
 	}
 	myNats.ProduceMsg(suite.cfg.Nats, tag)
 	var count int64

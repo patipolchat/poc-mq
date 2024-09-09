@@ -6,9 +6,11 @@ import (
 )
 
 type Config struct {
-	DB    *DBConfig    `mapstructure:"db" validate:"required"`
-	Kafka *KafkaConfig `mapstructure:"kafka" validate:"required"`
-	Nats  *NatConfig   `mapstructure:"nats"`
+	DB     *DBConfig     `mapstructure:"db" validate:"required"`
+	Kafka  *KafkaConfig  `mapstructure:"kafka" validate:"required"`
+	Kafka3 *Kafka3Config `mapstructure:"kafka3" validate:"required"`
+	Nats   *NatConfig    `mapstructure:"nats" validate:"required"`
+	Nat3   *Nat3Config   `mapstructure:"nats3" validate:"required"`
 }
 
 type DBConfig struct {
@@ -25,9 +27,20 @@ type KafkaConfig struct {
 	Partition int      `mapstructure:"partition" validate:"required"`
 }
 
+type Kafka3Config struct {
+	Brokers   []string `mapstructure:"brokers" validate:"required"`
+	Topics    []string `mapstructure:"topics" validate:"required"`
+	Partition int      `mapstructure:"partition" validate:"required"`
+}
+
 type NatConfig struct {
 	Url     string `mapstructure:"url" validate:"required"`
 	Subject string `mapstructure:"subject" validate:"required"`
+}
+
+type Nat3Config struct {
+	Url      string   `mapstructure:"url" validate:"required"`
+	Subjects []string `mapstructure:"subjects" validate:"required"`
 }
 
 func NewConfig() (*Config, error) {

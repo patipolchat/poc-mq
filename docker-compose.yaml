@@ -26,7 +26,7 @@ services:
       resources:
         limits:
           cpus: "1.0"         # CPU limit: 1 CPU core
-          memory: 1G        # Memory limit: 500MB
+          memory: 500M        # Memory limit: 500MB
   
   kafka-1:
     image: confluentinc/cp-kafka
@@ -54,7 +54,7 @@ services:
       resources:
         limits:
           cpus: "1.0"         # CPU limit: 1 CPU core
-          memory: 1G        # Memory limit: 500MB
+          memory: 500M        # Memory limit: 500MB
   
   kafka-2:
     image: confluentinc/cp-kafka
@@ -82,7 +82,7 @@ services:
       resources:
         limits:
           cpus: "1.0"         # CPU limit: 1 CPU core
-          memory: 1G        # Memory limit: 500MB
+          memory: 500M        # Memory limit: 500MB
           
 #            - "--name=nats1"
 #            - "--http_port=8222"
@@ -170,7 +170,7 @@ services:
   kafka-consumer:
     build: .
     command:
-      "./main consumeKafka"
+      "./main consume3Kafka"
     depends_on:
       - kafka-0
       - kafka-1
@@ -190,7 +190,7 @@ services:
   nat-consumer:
     build: .
     command:
-      "./main consumeNat"
+      "./main consume3Nats"
     depends_on:
       - nats
       - postgres
@@ -204,7 +204,6 @@ services:
           cpus: "1.0"         # CPU limit: 1 CPU core
           memory: 500M        # Memory limit: 500MB
   
-  
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
@@ -213,6 +212,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-0:29092, kafka-1:29092, kafka-2:29092
     ports:
       - 8080:8080
+      
       
       
       

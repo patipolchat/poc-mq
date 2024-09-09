@@ -12,7 +12,25 @@ kafka:
     - "localhost:9094"
   topic: "topic0"
   partition: 3
+  
+kafka3:
+  brokers:
+    - "localhost:9092"
+    - "localhost:9093"
+    - "localhost:9094"
+  topics:
+    - "topic1"
+    - "topic2"
+    - "topic3"
+  partition: 1
 
 nats:
   url: "nats://localhost:4222, nats://localhost:4223, nats://localhost:4224"
   subject: "subject0"
+  
+nats3:
+  url: "nats://localhost:4222, nats://localhost:4223, nats://localhost:4224"
+  subjects:
+    - "subject1"
+    - "subject2"
+    - "subject3"

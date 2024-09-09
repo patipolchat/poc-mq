@@ -66,3 +66,57 @@ func StartConsume(cfg *util.NatConfig, db *gorm.DB) {
 		}
 	}
 }
+
+func StartConsumes(cfg *util.Nat3Config, db *gorm.DB) {
+	q := model.NewDBQueue(db)
+	q.Start()
+	nc, err := nats.Connect(cfg.Url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer nc.Close()
+	js, err := jetstream.New(nc)
+	if err != nil {
+		log.Fatalln("JetStreamErr", err)
+	}
+	ctx := context.Background()
+	stream, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+		Name:     "foo",
+		Subjects: cfg.Subjects,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create stream: %v", err)
+	}
+
+	consumer, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
+		Name:    "foo3",
+		Durable: "foo3",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create consumer: %v", err)
+	}
+	fmt.Println("Connected to NATS server")
+	cc, err := consumer.Consume(func(msg jetstream.Msg) {
+		defer msg.Ack()
+		end := time.Now()
+		go func(msg jetstream.Msg, end time.Time) {
+			var message model.Message
+			err := json.Unmarshal(msg.Data(), &message)
+			if err != nil {
+				log.Fatalf("Failed to parse message: %v", err)
+			}
+			message.End = &end
+			message.Data = ""
+			message.SetDuration()
+			q.AddMsg(&message)
+		}(msg, end)
+	})
+	defer cc.Stop()
+	for {
+		select {
+		case <-cc.Closed():
+			log.Println("Consumer closed")
+			return
+		}
+	}
+}

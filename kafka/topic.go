@@ -41,3 +41,40 @@ func CreateTopic(cfg *util.KafkaConfig) error {
 		return nil
 	}
 }
+
+func CreateManyTopic(cfg *util.Kafka3Config) error {
+	// Configure Sarama
+	config := sarama.NewConfig()
+	config.Version = sarama.V3_6_0_0 // Use the Kafka version you are running
+
+	// Create a new ClusterAdmin client
+	admin, err := sarama.NewClusterAdmin(cfg.Brokers, config)
+	if err != nil {
+		log.Fatalf("Error creating cluster admin: %v", err)
+	}
+	defer func() {
+		if err := admin.Close(); err != nil {
+			log.Fatalf("Error closing cluster admin: %v", err)
+		}
+	}()
+
+	// Define the topic details
+	replicationFactor := int16(1)
+	topicDetail := &sarama.TopicDetail{
+		NumPartitions:     int32(cfg.Partition),
+		ReplicationFactor: replicationFactor,
+		ConfigEntries:     map[string]*string{},
+	}
+
+	// Create the new topic
+	for _, topic := range cfg.Topics {
+		err = admin.CreateTopic(topic, topicDetail, false)
+		if err != nil {
+			log.Printf("Error creating topic: %v\n", err)
+			return err
+		} else {
+			fmt.Printf("Topic '%s' created successfully\n", topic)
+		}
+	}
+	return nil
+}
